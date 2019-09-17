@@ -1,3 +1,8 @@
+[![Build Status](https://api.travis-ci.org/benjivesterby/montecarlopi.svg?branch=master)](https://api.travis-ci.org/benjivesterby/montecarlopi.svg?branch=master)
+[![Go Report Card](https://goreportcard.com/badge/github.com/benjivesterby/montecarlopi)](https://goreportcard.com/report/github.com/benjivesterby/montecarlopi)
+[![GoDoc](https://godoc.org/github.com/benjivesterby/montecarlopi?status.svg)](https://godoc.org/github.com/benjivesterby/montecarlopi)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 ## Welcome to GitHub Pages
 
 You can use the [editor on GitHub](https://github.com/benjivesterby/montecarlopi/edit/master/README.md) to maintain and preview the content for your website in Markdown files.
