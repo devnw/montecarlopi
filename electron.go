@@ -8,10 +8,10 @@ import (
 
 type mcelectron struct {
 	// ID is the electron ID
-	ID string `json:id`
+	ID string `json:"id"`
 
 	// Tosses is the number of tosses to generate
-	Tosses int `json:tosses`
+	Tosses int `json:"tosses"`
 }
 
 func (e *mcelectron) Atom() (ID string) {

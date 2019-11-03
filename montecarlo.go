@@ -2,7 +2,11 @@ package montecarlopi
 
 import (
 	"context"
+	"encoding/json"
 
+	"github.com/davecgh/go-spew/spew"
+
+	"github.com/benjivesterby/alog"
 	"github.com/benjivesterby/atomizer"
 )
 
@@ -23,6 +27,11 @@ func (mc *MonteCarlo) Process(ctx context.Context, electron atomizer.Electron, o
 
 	go func() {
 
+		var e = &mcelectron{}
+		if err := json.Unmarshal(electron.Payload(), e); err == nil {
+			alog.Print(spew.Sdump(e))
+		}
+
 		// Step 1: parse my electron - How many tosses?
 
 		// Step 2: Push the toss electrons onto the outbound channel
@@ -38,7 +47,7 @@ func (mc *MonteCarlo) Process(ctx context.Context, electron atomizer.Electron, o
 	return results, errors
 }
 
-func (mc *MonteCarlo) EstimatePI(tosses <-chan int) {
+func (mc *MonteCarlo) estimate(tosses <-chan int) {
 	// Until the channel closes calculate how many tosses are greater than 0
 
 	// Execute the calculation
