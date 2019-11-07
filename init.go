@@ -1,9 +1,21 @@
 package montecarlopi
 
-import "github.com/benjivesterby/atomizer"
+import (
+	"context"
+
+	"github.com/benjivesterby/alog"
+	"github.com/benjivesterby/atomizer"
+)
 
 func init() {
+	ctx := context.Background()
+
 	// Register the monte carlo atoms
-	atomizer.Register(nil, "montecarlo", MonteCarlo{})
-	atomizer.Register(nil, "toss", Toss{})
+	if err := atomizer.Register(ctx, "montecarlo", &MonteCarlo{}); err == nil {
+		if err = atomizer.Register(ctx, "toss", &Toss{}); err != nil {
+			alog.Error(err)
+		}
+	} else {
+		alog.Error(err)
+	}
 }

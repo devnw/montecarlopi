@@ -12,7 +12,7 @@ import (
 
 // MonteCarlo is the atom for estimating PI
 type MonteCarlo struct {
-	payload []byte
+	payload string
 }
 
 // ID test method
@@ -21,9 +21,8 @@ func (mc *MonteCarlo) ID() string {
 }
 
 // Process test method
-func (mc *MonteCarlo) Process(ctx context.Context, electron atomizer.Electron, outbound chan<- atomizer.Electron) (<-chan []byte, <-chan error) {
+func (mc *MonteCarlo) Process(ctx context.Context, electron atomizer.Electron, outbound chan<- atomizer.Electron) <-chan []byte {
 	var results = make(chan []byte)
-	var errors = make(chan error)
 
 	go func() {
 
@@ -44,7 +43,7 @@ func (mc *MonteCarlo) Process(ctx context.Context, electron atomizer.Electron, o
 
 	}()
 
-	return results, errors
+	return results
 }
 
 func (mc *MonteCarlo) estimate(tosses <-chan int) {

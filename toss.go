@@ -15,9 +15,8 @@ func (t *Toss) ID() string {
 }
 
 // Process test method
-func (t *Toss) Process(ctx context.Context, electron atomizer.Electron, outbound chan<- atomizer.Electron) (<-chan []byte, <-chan error) {
+func (t *Toss) Process(ctx context.Context, electron atomizer.Electron, outbound chan<- atomizer.Electron) <-chan []byte {
 	var results = make(chan []byte)
-	var errors = make(chan error)
 
 	go func() {
 		// Step 1: Generate my Random X/Y Coordinates
@@ -25,7 +24,7 @@ func (t *Toss) Process(ctx context.Context, electron atomizer.Electron, outbound
 		// Step 2: Return my Random X/Y Coordinates
 	}()
 
-	return results, errors
+	return results
 }
 
 // TODO: Implement for project
