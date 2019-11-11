@@ -19,30 +19,18 @@ func (t *Toss) ID() string {
 }
 
 // Process test method
-func (t *Toss) Process(ctx context.Context, electron atomizer.Electron, outbound chan<- atomizer.Electron) <-chan []byte {
-	var results = make(chan []byte)
+func (t *Toss) Process(ctx context.Context, conductor atomizer.Conductor, electron atomizer.Electron) (result []byte, err error) {
+	// Step 1: Generate my Random X/Y Coordinates
+	x := rand.Float64()
+	y := rand.Float64()
 
-	go func() {
-		defer close(results)
-		// Step 1: Generate my Random X/Y Coordinates
-		x := rand.Float64()
-		y := rand.Float64()
+	// Step 2: Return my Random X/Y Coordinates
+	t.Value = t.dsquared(x, y)
 
-		// Step 2: Return my Random X/Y Coordinates
-		t.Value = t.dsquared(x, y)
+	// Step 3: Marshal the job struct passing the value of the toss back to the requestor
+	result, err = json.Marshal(t)
 
-		if b, err := json.Marshal(t); err == nil {
-
-			// Push result to conductor
-			select {
-			case <-ctx.Done():
-				return
-			case results <- b:
-			}
-		}
-	}()
-
-	return results
+	return result, err
 }
 
 func (t *Toss) dsquared(x, y float64) int {
