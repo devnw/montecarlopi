@@ -22,13 +22,13 @@ func (mc *MonteCarlo) ID() string {
 }
 
 // Process test method
-func (mc *MonteCarlo) Process(ctx context.Context, conductor atomizer.Conductor, electron atomizer.Electron) (result []byte, err error) {
+func (mc *MonteCarlo) Process(ctx context.Context, conductor atomizer.Conductor, electron *atomizer.Electron) (result []byte, err error) {
 	mc.conductor = conductor
 
 	mc.tosses = make(chan int)
 
 	var e = &mcelectron{}
-	if err = json.Unmarshal(electron.Payload(), e); err == nil {
+	if err = json.Unmarshal(electron.Payload, e); err == nil {
 
 		if e.Tosses > 0 {
 			mc.tossed = e.Tosses
@@ -55,7 +55,7 @@ func (mc *MonteCarlo) Process(ctx context.Context, conductor atomizer.Conductor,
 			// TODO:
 		}
 	} else {
-		alog.Errorf(err, "error un-marshalling %s", string(electron.Payload()))
+		alog.Errorf(err, "error un-marshalling %s", string(electron.Payload))
 	}
 
 	return result, err
@@ -74,9 +74,9 @@ func (mc *MonteCarlo) Process(ctx context.Context, conductor atomizer.Conductor,
 func (mc *MonteCarlo) toss(ctx context.Context) (err error) {
 	//duration := time.Second * 60
 
-	e := &atomizer.ElectronBase{
-		ElectronID: uuid.New().String(),
-		AtomID:     "toss",
+	e := &atomizer.Electron{
+		ID:     uuid.New().String(),
+		AtomID: "toss",
 		//Timeout:    &duration,
 	}
 
@@ -113,7 +113,7 @@ func (mc *MonteCarlo) toss(ctx context.Context) (err error) {
 					} else {
 						select {
 						case mc.tosses <- -1:
-							alog.Errorf(nil, "response closed prematurely for electron [%s]", e.ElectronID)
+							alog.Errorf(nil, "response closed prematurely for electron [%s]", e.ID)
 						}
 					}
 				}
@@ -122,7 +122,7 @@ func (mc *MonteCarlo) toss(ctx context.Context) (err error) {
 			}
 		}(ctx, response)
 	} else {
-		alog.Errorf(err, "error sending electron [%s]", e.ElectronID)
+		alog.Errorf(err, "error sending electron [%s]", e.ID)
 	}
 
 	return err
