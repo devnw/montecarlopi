@@ -3,6 +3,7 @@ package montecarlopi
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/benjivesterby/alog"
 	"github.com/benjivesterby/atomizer"
@@ -84,8 +85,8 @@ func (mc *MonteCarlo) toss(ctx context.Context) (err error) {
 	if response, err = mc.conductor.Send(ctx, e); err == nil {
 
 		go func(ctx context.Context, response <-chan *atomizer.Properties) {
-			// ctx, cancel := context.WithTimeout(ctx, duration)
-			// defer cancel()
+			ctx, cancel := context.WithTimeout(ctx, time.Second*30)
+			defer cancel()
 
 			if response != nil {
 				select {
