@@ -36,6 +36,7 @@ func (mc *MonteCarlo) Process(ctx context.Context, conductor atomizer.Conductor,
 
 			r := mc.estimate(ctx)
 
+			// Req: 4.1.2.1
 			for i := 0; i < e.Tosses; i++ {
 				if err = mc.toss(ctx); err != nil {
 					e.Tosses--
@@ -60,31 +61,23 @@ func (mc *MonteCarlo) Process(ctx context.Context, conductor atomizer.Conductor,
 	}
 
 	return result, err
-
-	// Step 1: parse my electron - How many tosses?
-
-	// Step 2: Push the toss electrons onto the outbound channel
-
-	// Step 3: Wait for the callbacks on the outbound electrons to finish processing
-
-	// Step 4: Calculate PI estimation using the returned values from each toss "atom"
-
-	// Step 5: Return the results on the results channel to the atomizer
 }
 
 func (mc *MonteCarlo) toss(ctx context.Context) (err error) {
-	//duration := time.Second * 60
 
+	// Req: 4.1.1.7.3
 	e := &atomizer.Electron{
 		ID:     uuid.New().String(),
 		AtomID: "toss",
-		//Timeout:    &duration,
 	}
 
+	// Req: 4.1.2.1
 	var response <-chan *atomizer.Properties
 	if response, err = mc.conductor.Send(ctx, e); err == nil {
 
 		go func(ctx context.Context, response <-chan *atomizer.Properties) {
+
+			// Req: 4.1.2.4
 			ctx, cancel := context.WithTimeout(ctx, time.Second*30)
 			defer cancel()
 
@@ -167,6 +160,7 @@ func (mc *MonteCarlo) estimate(ctx context.Context) <-chan []byte {
 	return result
 }
 
+// Req: 4.1.2.4
 func (mc *MonteCarlo) readtosses(ctx context.Context) (in, tosses, errors int) {
 
 	var count int
@@ -197,10 +191,7 @@ func (mc *MonteCarlo) readtosses(ctx context.Context) (in, tosses, errors int) {
 	return in, tosses, errors
 }
 
+// Req: 4.1.2.4
 func (mc *MonteCarlo) calculate(in, tosses float64) float64 {
 	return (4 * in) / tosses
 }
-
-// double EstimatePI(long long inCircle, int numTosses) {
-// 	return (4 * inCircle)/((double)numTosses);
-// }
