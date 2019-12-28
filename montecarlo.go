@@ -17,11 +17,6 @@ type MonteCarlo struct {
 	conductor atomizer.Conductor
 }
 
-// ID test method
-func (mc *MonteCarlo) ID() string {
-	return "montecarlo"
-}
-
 // Process test method
 func (mc *MonteCarlo) Process(ctx context.Context, conductor atomizer.Conductor, electron *atomizer.Electron) (result []byte, err error) {
 	mc.conductor = conductor
@@ -36,7 +31,6 @@ func (mc *MonteCarlo) Process(ctx context.Context, conductor atomizer.Conductor,
 
 			r := mc.estimate(ctx)
 
-			// Req: 4.1.2.1
 			for i := 0; i < e.Tosses; i++ {
 				if err = mc.toss(ctx); err != nil {
 					e.Tosses--
@@ -65,19 +59,16 @@ func (mc *MonteCarlo) Process(ctx context.Context, conductor atomizer.Conductor,
 
 func (mc *MonteCarlo) toss(ctx context.Context) (err error) {
 
-	// Req: 4.1.1.7.3
 	e := &atomizer.Electron{
 		ID:     uuid.New().String(),
-		AtomID: "toss",
+		AtomID: atomizer.ID(&Toss{}),
 	}
 
-	// Req: 4.1.2.1
 	var response <-chan *atomizer.Properties
 	if response, err = mc.conductor.Send(ctx, e); err == nil {
 
 		go func(ctx context.Context, response <-chan *atomizer.Properties) {
 
-			// Req: 4.1.2.4
 			ctx, cancel := context.WithTimeout(ctx, time.Second*30)
 			defer cancel()
 
@@ -160,7 +151,6 @@ func (mc *MonteCarlo) estimate(ctx context.Context) <-chan []byte {
 	return result
 }
 
-// Req: 4.1.2.4
 func (mc *MonteCarlo) readtosses(ctx context.Context) (in, tosses, errors int) {
 
 	var count int
@@ -191,7 +181,6 @@ func (mc *MonteCarlo) readtosses(ctx context.Context) (in, tosses, errors int) {
 	return in, tosses, errors
 }
 
-// Req: 4.1.2.4
 func (mc *MonteCarlo) calculate(in, tosses float64) float64 {
 	return (4 * in) / tosses
 }
