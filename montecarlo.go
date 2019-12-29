@@ -14,6 +14,7 @@ import (
 type MonteCarlo struct {
 	tossed    int
 	tosses    chan int
+	timeout   time.Duration
 	conductor atomizer.Conductor
 }
 
@@ -27,6 +28,10 @@ func (mc *MonteCarlo) Process(ctx context.Context, conductor atomizer.Conductor,
 	if err = json.Unmarshal(electron.Payload, e); err == nil {
 
 		if e.Tosses > 0 {
+
+			// Setup the timeout with a minimum of 30 seconds
+			mc.timeout = time.Second * (time.Duration(e.Tosses/500) + 30)
+
 			mc.tossed = e.Tosses
 
 			r := mc.estimate(ctx)
@@ -69,7 +74,7 @@ func (mc *MonteCarlo) toss(ctx context.Context) (err error) {
 
 		go func(ctx context.Context, response <-chan *atomizer.Properties) {
 
-			ctx, cancel := context.WithTimeout(ctx, time.Second*30)
+			ctx, cancel := context.WithTimeout(ctx, mc.timeout)
 			defer cancel()
 
 			if response != nil {
