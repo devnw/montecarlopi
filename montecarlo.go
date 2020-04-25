@@ -20,13 +20,17 @@ type MonteCarlo struct {
 }
 
 // Process test method
-func (mc *MonteCarlo) Process(ctx context.Context, conductor atomizer.Conductor, electron *atomizer.Electron) (result []byte, err error) {
+func (mc *MonteCarlo) Process(
+	ctx context.Context,
+	conductor atomizer.Conductor,
+	electron atomizer.Electron,
+) (result []byte, err error) {
 	mc.conductor = conductor
 
 	mc.tosses = make(chan int)
 
-	var e = &mcelectron{}
-	if err = json.Unmarshal(electron.Payload, e); err == nil {
+	var e = mcelectron{}
+	if err = json.Unmarshal(electron.Payload, &e); err == nil {
 
 		if e.Tosses > 0 {
 
