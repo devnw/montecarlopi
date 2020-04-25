@@ -3,10 +3,11 @@ package montecarlopi
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"time"
 
-	"github.com/benjivesterby/alog"
-	"github.com/benjivesterby/atomizer"
+	"github.com/devnw/alog"
+	"github.com/devnw/atomizer"
 	"github.com/google/uuid"
 )
 
@@ -53,7 +54,7 @@ func (mc *MonteCarlo) Process(ctx context.Context, conductor atomizer.Conductor,
 				}
 			}
 		} else {
-			// TODO:
+			return nil, errors.New("0 is not a valid toss")
 		}
 	} else {
 		alog.Errorf(err, "error un-marshalling %s", string(electron.Payload))
@@ -64,7 +65,7 @@ func (mc *MonteCarlo) Process(ctx context.Context, conductor atomizer.Conductor,
 
 func (mc *MonteCarlo) toss(ctx context.Context) (err error) {
 
-	e := &atomizer.Electron{
+	e := atomizer.Electron{
 		ID:     uuid.New().String(),
 		AtomID: atomizer.ID(&Toss{}),
 	}
@@ -80,13 +81,10 @@ func (mc *MonteCarlo) toss(ctx context.Context) (err error) {
 			if response != nil {
 				select {
 				case <-ctx.Done():
-					select {
-					case mc.tosses <- -1:
-						alog.Error(nil, "context closed, returning toss error")
-					}
+					mc.tosses <- -1
 				case r, ok := <-response:
 					if ok {
-						if r.Error == nil {
+						if len(r.Errors) > 0 {
 							t := &Toss{}
 							if err := json.Unmarshal(r.Result, t); err == nil {
 
@@ -98,13 +96,13 @@ func (mc *MonteCarlo) toss(ctx context.Context) (err error) {
 								alog.Errorf(err, "error while un-marshalling toss from %s\n", r.Result)
 							}
 						} else {
-							alog.Error(r.Error, "error in toss response, sending error code")
+							for _, e := range r.Errors {
+								alog.Error(e)
+							}
 						}
 					} else {
-						select {
-						case mc.tosses <- -1:
-							alog.Errorf(nil, "response closed prematurely for electron [%s]", e.ID)
-						}
+						mc.tosses <- -1
+						alog.Errorf(nil, "response closed prematurely for electron [%s]", e.ID)
 					}
 				}
 			} else {
@@ -149,7 +147,7 @@ func (mc *MonteCarlo) estimate(ctx context.Context) <-chan []byte {
 				return
 			}
 		} else {
-			// TODO:
+			alog.Error(err, "error marshalling response")
 		}
 	}(result)
 

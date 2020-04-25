@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"math/rand"
 
-	"github.com/benjivesterby/atomizer"
+	"github.com/devnw/atomizer"
 )
 
 // Toss randomly tosses darts

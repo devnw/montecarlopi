@@ -1,11 +1,9 @@
-module github.com/benjivesterby/montecarlopi
+module github.com/devnw/montecarlopi
 
 go 1.14
 
 require (
-	github.com/benjivesterby/alog v0.0.0-20191227202256-87643283ff6c
-	github.com/benjivesterby/atomizer v0.0.0-20191229211640-adc70e567c51
-	github.com/davecgh/go-spew v1.1.1
+	github.com/devnw/alog v1.0.1
+	github.com/devnw/atomizer v0.0.0-20200425014640-bf9d01a48c35
 	github.com/google/uuid v1.1.1
-	golang.org/x/sys v0.0.0-20191228213918-04cbcbbfeed8 // indirect
 )
