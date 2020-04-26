@@ -29,6 +29,8 @@ func (mc *MonteCarlo) Process(
 
 	mc.tosses = make(chan int)
 
+	alog.Printf("%s\n", string(electron.Payload))
+
 	var e = mcelectron{}
 	if err = json.Unmarshal(electron.Payload, &e); err == nil {
 
@@ -74,10 +76,10 @@ func (mc *MonteCarlo) toss(ctx context.Context) (err error) {
 		AtomID: atomizer.ID(&Toss{}),
 	}
 
-	var response <-chan *atomizer.Properties
+	var response <-chan atomizer.Properties
 	if response, err = mc.conductor.Send(ctx, e); err == nil {
 
-		go func(ctx context.Context, response <-chan *atomizer.Properties) {
+		go func(ctx context.Context, response <-chan atomizer.Properties) {
 
 			ctx, cancel := context.WithTimeout(ctx, mc.timeout)
 			defer cancel()
@@ -88,7 +90,7 @@ func (mc *MonteCarlo) toss(ctx context.Context) (err error) {
 					mc.tosses <- -1
 				case r, ok := <-response:
 					if ok {
-						if len(r.Errors) > 0 {
+						if r.Error != nil {
 							t := &Toss{}
 							if err := json.Unmarshal(r.Result, t); err == nil {
 
@@ -100,9 +102,7 @@ func (mc *MonteCarlo) toss(ctx context.Context) (err error) {
 								alog.Errorf(err, "error while un-marshalling toss from %s\n", r.Result)
 							}
 						} else {
-							for _, e := range r.Errors {
-								alog.Error(e)
-							}
+							alog.Error(r.Error)
 						}
 					} else {
 						mc.tosses <- -1
