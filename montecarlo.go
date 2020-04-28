@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/devnw/alog"
@@ -29,41 +30,42 @@ func (mc *MonteCarlo) Process(
 
 	mc.tosses = make(chan int)
 
-	alog.Printf("%s\n", string(electron.Payload))
-
 	var e = mcelectron{}
-	if err = json.Unmarshal(electron.Payload, &e); err == nil {
+	err = json.Unmarshal(electron.Payload, &e)
+	if err != nil {
+		err := fmt.Errorf("error un-marshalling %s | err: %s", string(electron.Payload), err)
+		return nil, err
+	}
 
-		if e.Tosses > 0 {
+	if e.Tosses < 1 {
+		return nil, errors.New("0 is not a valid toss")
+	}
 
-			// Setup the timeout with a minimum of 30 seconds
-			mc.timeout = time.Second * (time.Duration(e.Tosses/500) + 30)
+	// Setup the timeout with a minimum of 30 seconds
+	mc.timeout = time.Second * (time.Duration(e.Tosses/500) + 30)
+	mc.tossed = e.Tosses
 
-			mc.tossed = e.Tosses
+	r := mc.estimate(ctx)
 
-			r := mc.estimate(ctx)
-
-			for i := 0; i < e.Tosses; i++ {
-				if err = mc.toss(ctx); err != nil {
-					e.Tosses--
-					alog.Warn(err, "error received on sending, attempting toss again")
-				}
+	for i := 0; i < e.Tosses; i++ {
+		select {
+		case <-ctx.Done():
+		default:
+			if err = mc.toss(ctx); err != nil {
+				e.Tosses--
+				alog.Warn(err, "error received on sending, attempting toss again")
 			}
-
-			// Get the results from the estimation function finishing processing
-			select {
-			case <-ctx.Done():
-				return
-			case calc, ok := <-r:
-				if ok {
-					result = calc
-				}
-			}
-		} else {
-			return nil, errors.New("0 is not a valid toss")
 		}
-	} else {
-		alog.Errorf(err, "error un-marshalling %s", string(electron.Payload))
+	}
+
+	// Get the results from the estimation function finishing processing
+	select {
+	case <-ctx.Done():
+		return
+	case calc, ok := <-r:
+		if ok {
+			result = calc
+		}
 	}
 
 	return result, err
@@ -76,46 +78,47 @@ func (mc *MonteCarlo) toss(ctx context.Context) (err error) {
 		AtomID: atomizer.ID(&Toss{}),
 	}
 
-	var response <-chan atomizer.Properties
-	if response, err = mc.conductor.Send(ctx, e); err == nil {
-
-		go func(ctx context.Context, response <-chan atomizer.Properties) {
-
-			ctx, cancel := context.WithTimeout(ctx, mc.timeout)
-			defer cancel()
-
-			if response != nil {
-				select {
-				case <-ctx.Done():
-					mc.tosses <- -1
-				case r, ok := <-response:
-					if ok {
-						if r.Error != nil {
-							t := &Toss{}
-							if err := json.Unmarshal(r.Result, t); err == nil {
-
-								select {
-								case <-ctx.Done():
-								case mc.tosses <- t.Value:
-								}
-							} else {
-								alog.Errorf(err, "error while un-marshalling toss from %s\n", r.Result)
-							}
-						} else {
-							alog.Error(r.Error)
-						}
-					} else {
-						mc.tosses <- -1
-						alog.Errorf(nil, "response closed prematurely for electron [%s]", e.ID)
-					}
-				}
-			} else {
-				alog.Error(nil, "response channel from send on conductor is nil")
-			}
-		}(ctx, response)
-	} else {
-		alog.Errorf(err, "error sending electron [%s]", e.ID)
+	response, err := mc.conductor.Send(ctx, e)
+	if err != nil {
+		return fmt.Errorf("error sending electron [%s] | %s", e.ID, err.Error())
 	}
+
+	go func(ctx context.Context, response <-chan atomizer.Properties) {
+
+		ctx, cancel := context.WithTimeout(ctx, mc.timeout)
+		defer cancel()
+
+		if response == nil {
+			alog.Error(nil, "response channel from send on conductor is nil")
+			return
+		}
+
+		select {
+		case <-ctx.Done():
+			mc.tosses <- -1
+		case r, ok := <-response:
+			if !ok {
+				mc.tosses <- -1
+				alog.Errorf(nil, "response closed prematurely for electron [%s]", e.ID)
+			}
+
+			if r.Error != nil {
+				alog.Error(r.Error)
+				return
+			}
+
+			t := Toss{}
+			err := json.Unmarshal(r.Result, &t)
+			if err != nil {
+				alog.Errorf(err, "error while un-marshalling toss from %s\n", r.Result)
+			}
+
+			select {
+			case <-ctx.Done():
+			case mc.tosses <- t.Value:
+			}
+		}
+	}(ctx, response)
 
 	return err
 }
@@ -172,7 +175,6 @@ func (mc *MonteCarlo) readtosses(ctx context.Context) (in, tosses, errors int) {
 		case v, ok := <-mc.tosses:
 			if ok {
 				tosses++
-				alog.Printf("toss: %v\n", tosses)
 				if v > 0 {
 					in++
 				} else if v < 0 {
