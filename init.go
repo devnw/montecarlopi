@@ -6,17 +6,19 @@
 package montecarlopi
 
 import (
-	"github.com/devnw/alog"
-	"github.com/devnw/atomizer"
+	"atomizer.io/engine"
+	"devnw.com/alog"
 )
 
 func init() {
 	// Register the monte carlo atoms
-	if err := atomizer.Register(&MonteCarlo{}); err == nil {
-		if err = atomizer.Register(&Toss{}); err != nil {
-			alog.Error(err)
-		}
-	} else {
+	err := engine.Register(&MonteCarlo{})
+	if err != nil {
+		alog.Error(err)
+	}
+
+	err = engine.Register(&Toss{})
+	if err != nil {
 		alog.Error(err)
 	}
 }

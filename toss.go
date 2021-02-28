@@ -10,7 +10,7 @@ import (
 	"encoding/json"
 	"math/rand"
 
-	"github.com/devnw/atomizer"
+	"atomizer.io/engine"
 )
 
 // Toss randomly tosses darts
@@ -21,8 +21,8 @@ type Toss struct {
 // Process test method
 func (t *Toss) Process(
 	ctx context.Context,
-	conductor atomizer.Conductor,
-	electron atomizer.Electron,
+	conductor engine.Conductor,
+	electron engine.Electron,
 ) (result []byte, err error) {
 	// Step 1: Generate my Random X/Y Coordinates
 	x := rand.Float64()

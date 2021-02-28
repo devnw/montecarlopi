@@ -1,9 +1,9 @@
-module github.com/devnw/montecarlopi
+module atomizer.io/montecarlopi
 
-go 1.14
+go 1.16
 
 require (
-	github.com/devnw/alog v1.0.2
-	github.com/devnw/atomizer v1.0.0
-	github.com/google/uuid v1.1.2
+	atomizer.io/engine v1.0.2
+	devnw.com/alog v1.0.3
+	github.com/google/uuid v1.2.0
 )

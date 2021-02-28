@@ -12,8 +12,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/devnw/alog"
-	"github.com/devnw/atomizer"
+	"atomizer.io/engine"
+	"devnw.com/alog"
 	"github.com/google/uuid"
 )
 
@@ -22,14 +22,14 @@ type MonteCarlo struct {
 	tossed    int
 	tosses    chan int
 	timeout   time.Duration
-	conductor atomizer.Conductor
+	conductor engine.Conductor
 }
 
 // Process test method
 func (mc *MonteCarlo) Process(
 	ctx context.Context,
-	conductor atomizer.Conductor,
-	electron atomizer.Electron,
+	conductor engine.Conductor,
+	electron engine.Electron,
 ) (result []byte, err error) {
 	mc.conductor = conductor
 
@@ -78,9 +78,9 @@ func (mc *MonteCarlo) Process(
 
 func (mc *MonteCarlo) toss(ctx context.Context) (err error) {
 
-	e := atomizer.Electron{
+	e := engine.Electron{
 		ID:     uuid.New().String(),
-		AtomID: atomizer.ID(&Toss{}),
+		AtomID: engine.ID(&Toss{}),
 	}
 
 	response, err := mc.conductor.Send(ctx, e)
@@ -88,7 +88,7 @@ func (mc *MonteCarlo) toss(ctx context.Context) (err error) {
 		return fmt.Errorf("error sending electron [%s] | %s", e.ID, err.Error())
 	}
 
-	go func(ctx context.Context, response <-chan atomizer.Properties) {
+	go func(ctx context.Context, response <-chan engine.Properties) {
 
 		ctx, cancel := context.WithTimeout(ctx, mc.timeout)
 		defer cancel()
