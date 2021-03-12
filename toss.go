@@ -13,6 +13,9 @@ import (
 	"atomizer.io/engine"
 )
 
+// Ensure compile time adherence to interface
+var _ engine.Atom = (*Toss)(nil)
+
 // Toss randomly tosses darts
 type Toss struct {
 	Value int `json:"value"`
@@ -22,10 +25,14 @@ type Toss struct {
 func (t *Toss) Process(
 	ctx context.Context,
 	conductor engine.Conductor,
-	electron engine.Electron,
+	electron *engine.Electron,
 ) (result []byte, err error) {
 	// Step 1: Generate my Random X/Y Coordinates
+
+	/* #nosec G404 */
 	x := rand.Float64()
+
+	/* #nosec G404 */
 	y := rand.Float64()
 
 	// Step 2: Return my Random X/Y Coordinates

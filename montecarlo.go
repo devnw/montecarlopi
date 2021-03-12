@@ -17,6 +17,9 @@ import (
 	"github.com/google/uuid"
 )
 
+// Ensure compile time adherence to interface
+var _ engine.Atom = (*MonteCarlo)(nil)
+
 // MonteCarlo is the atom for estimating PI
 type MonteCarlo struct {
 	tossed    int
@@ -25,20 +28,24 @@ type MonteCarlo struct {
 	conductor engine.Conductor
 }
 
+// Constants for helping determine a timeout for tosses
+const denom int = 500
+const modifier int = 30
+
 // Process test method
 func (mc *MonteCarlo) Process(
 	ctx context.Context,
 	conductor engine.Conductor,
-	electron engine.Electron,
+	electron *engine.Electron,
 ) (result []byte, err error) {
 	mc.conductor = conductor
 
 	mc.tosses = make(chan int)
 
-	var e = mcelectron{}
-	err = json.Unmarshal(electron.Payload, &e)
+	var e = &mcelectron{}
+	err = json.Unmarshal(electron.Payload, e)
 	if err != nil {
-		err := fmt.Errorf("error un-marshalling %s | err: %s", string(electron.Payload), err)
+		err = fmt.Errorf("error un-marshaling %s | err: %s", string(electron.Payload), err)
 		return nil, err
 	}
 
@@ -47,7 +54,7 @@ func (mc *MonteCarlo) Process(
 	}
 
 	// Setup the timeout with a minimum of 30 seconds
-	mc.timeout = time.Second * (time.Duration(e.Tosses/500) + 30)
+	mc.timeout = time.Second * (time.Duration(e.Tosses/denom) + time.Duration(modifier))
 	mc.tossed = e.Tosses
 
 	r := mc.estimate(ctx)
@@ -77,8 +84,7 @@ func (mc *MonteCarlo) Process(
 }
 
 func (mc *MonteCarlo) toss(ctx context.Context) (err error) {
-
-	e := engine.Electron{
+	e := &engine.Electron{
 		ID:     uuid.New().String(),
 		AtomID: engine.ID(&Toss{}),
 	}
@@ -88,8 +94,7 @@ func (mc *MonteCarlo) toss(ctx context.Context) (err error) {
 		return fmt.Errorf("error sending electron [%s] | %s", e.ID, err.Error())
 	}
 
-	go func(ctx context.Context, response <-chan engine.Properties) {
-
+	go func(ctx context.Context, response <-chan *engine.Properties) {
 		ctx, cancel := context.WithTimeout(ctx, mc.timeout)
 		defer cancel()
 
@@ -113,9 +118,9 @@ func (mc *MonteCarlo) toss(ctx context.Context) (err error) {
 			}
 
 			t := Toss{}
-			err := json.Unmarshal(r.Result, &t)
+			err = json.Unmarshal(r.Result, &t)
 			if err != nil {
-				alog.Errorf(err, "error while un-marshalling toss from %s\n", r.Result)
+				alog.Errorf(err, "error while un-marshaling toss from %s\n", r.Result)
 			}
 
 			select {
@@ -135,7 +140,7 @@ func (mc *MonteCarlo) estimate(ctx context.Context) <-chan []byte {
 		defer close(result)
 
 		// Until the channel closes calculate how many tosses are greater than 0
-		in, tosses, errors := mc.readtosses(ctx)
+		in, tosses, errs := mc.readtosses(ctx)
 		pi := mc.calculate(float64(in), float64(tosses))
 
 		res := struct {
@@ -146,7 +151,7 @@ func (mc *MonteCarlo) estimate(ctx context.Context) <-chan []byte {
 		}{
 			in,
 			tosses,
-			errors,
+			errs,
 			pi,
 		}
 
@@ -159,15 +164,14 @@ func (mc *MonteCarlo) estimate(ctx context.Context) <-chan []byte {
 				return
 			}
 		} else {
-			alog.Error(err, "error marshalling response")
+			alog.Error(err, "error marshaling response")
 		}
 	}(result)
 
 	return result
 }
 
-func (mc *MonteCarlo) readtosses(ctx context.Context) (in, tosses, errors int) {
-
+func (mc *MonteCarlo) readtosses(ctx context.Context) (in, tosses, errs int) {
 	var count int
 
 	// Execute the calculation
@@ -183,7 +187,7 @@ func (mc *MonteCarlo) readtosses(ctx context.Context) (in, tosses, errors int) {
 				if v > 0 {
 					in++
 				} else if v < 0 {
-					errors++
+					errs++
 					tosses--
 				}
 			} else {
@@ -192,7 +196,7 @@ func (mc *MonteCarlo) readtosses(ctx context.Context) (in, tosses, errors int) {
 		}
 	}
 
-	return in, tosses, errors
+	return in, tosses, errs
 }
 
 func (mc *MonteCarlo) calculate(in, tosses float64) float64 {
