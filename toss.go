@@ -10,7 +10,7 @@ import (
 	"encoding/json"
 	"math/rand"
 
-	"atomizer.io/engine"
+	"go.atomizer.io/engine"
 )
 
 // Ensure compile time adherence to interface

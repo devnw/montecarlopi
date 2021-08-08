@@ -12,9 +12,9 @@ import (
 	"fmt"
 	"time"
 
-	"atomizer.io/engine"
-	"devnw.com/alog"
 	"github.com/google/uuid"
+	"go.atomizer.io/engine"
+	"go.devnw.com/alog"
 )
 
 // Ensure compile time adherence to interface

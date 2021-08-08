@@ -6,8 +6,8 @@
 package montecarlopi
 
 import (
-	"atomizer.io/engine"
-	"devnw.com/alog"
+	"go.atomizer.io/engine"
+	"go.devnw.com/alog"
 )
 
 func init() {
